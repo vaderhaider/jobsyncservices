@@ -15,9 +15,7 @@ mongoose_1.default.connect(process.env.MONGO_URI)
     .then(() => console.log('Connected to MongoDB'))
     .catch(err => console.error('MongoDB connection error:', err));
 app.use(express_1.default.json());
-app.use((0, cors_1.default)({
-    origin: 'http://localhost:8080' // Or '*' for any origin
-}));
+app.use((0, cors_1.default)());
 app.use('/api', routes_1.default);
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
