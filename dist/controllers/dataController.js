@@ -97,22 +97,23 @@ const deleteCandidate = async (req, res) => {
 };
 exports.deleteCandidate = deleteCandidate;
 const getCallAnalysis = async (req, res) => {
-    console.log('getCallAnalysis route hit with body:', req.body);
-    const { Name, Position, Organization } = req.body;
+    const { Name, Position, Organization } = req.query;
+    console.log(Name, Position, Organization);
     if (!Name || !Position || !Organization) {
-        return res.status(400).json({ message: 'Name, Position, and Organization are required.' });
+        return res.status(400).json({ message: 'Name, Position, and Organization are required as query parameters.' });
     }
+    const query = {
+        Name: { $regex: Name, $options: 'i' },
+        Position: { $regex: Position, $options: 'i' },
+        Organization: { $regex: Organization, $options: 'i' }
+    };
+    console.log('MongoDB query:', query);
     try {
-        const result = await callAnalysis_1.callAnalysis.find({
-            Name: { $regex: Name, $options: 'i' },
-            Position: { $regex: Position, $options: 'i' },
-            Organization: { $regex: Organization, $options: 'i' }
-        });
+        const result = await callAnalysis_1.callAnalysis.find(query);
         console.log('MongoDB result:', result);
         if (!result || result.length === 0) {
             return res.status(404).json({ message: 'No call analysis data found.' });
         }
-        console.log('Call analysis found, sending 200 with data:', result);
         return res.status(200).json({ callAnalysis: result });
     }
     catch (err) {
