@@ -2,12 +2,21 @@ import { Request, Response } from 'express';
 import { Job } from '../models/job';  
 import { Candidate } from '../models/candidate';
 import { callAnalysis } from '../models/callAnalysis';
-import { mongo } from 'mongoose';
+import mongoose from 'mongoose';
+import { User } from '../models/user';
 
 
 export const getData = async (req: Request, res: Response) => {
-    const jobs = await Job.find();
-    res.json({jobs});
+    const { userID } = req.query;
+    let jobs;
+    if (userID && mongoose.Types.ObjectId.isValid(userID as string)) {
+        jobs = await Job.find({ userID: new mongoose.Types.ObjectId(userID as string) });
+    } else if (userID) {
+        jobs = await Job.find({ userID: userID });
+    } else {
+        jobs = await Job.find();
+    }
+    res.json({ jobs });
 };
 
 export const postData = async (req: Request, res: Response) => {
@@ -34,8 +43,8 @@ export const postData = async (req: Request, res: Response) => {
 
   // Otherwise, create new job (POST)
   console.log('postData route hit with body:', req.body);
-  const { title, description, requirements, organizationName, location } = req.body;
-  const newJob = new Job({ title, description, organizationName, location, requirements });
+  const { title, description, requirements, organizationName, location, userID } = req.body;
+  const newJob = new Job({ title, description, organizationName, location, requirements, userID });
   await newJob.save();
   res.status(200).json({ message: 'Data received successfully' });
 };
@@ -46,7 +55,13 @@ export const deleteJob = async (req: Request, res: Response) => {
     return res.status(400).json({ message: 'Job _id is required for deletion.' });
   }
   try {
-    const deletedJob = await Job.findByIdAndDelete(_id);
+    // If _id is not a valid ObjectId, use findOneAndDelete
+    let deletedJob;
+    if (mongoose.Types.ObjectId.isValid(_id)) {
+      deletedJob = await Job.findByIdAndDelete(_id);
+    } else {
+      deletedJob = await Job.findOneAndDelete({ _id });
+    }
     if (!deletedJob) {
       return res.status(404).json({ message: 'Job not found.' });
     }
@@ -134,6 +149,40 @@ export const postCallAnalysis = async (req: Request, res: Response) => {
     return res.status(201).json({ message: 'Call analysis entry created successfully', callAnalysis: newCallAnalysis });
   } catch (err) {
     return res.status(500).json({ message: 'Error creating call analysis entry', error: err });
+  }
+};
+
+export const registerUser = async (req: Request, res: Response) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ message: 'Username and password are required.' });
+  }
+  try {
+    const existingUser = await User.findOne({ username });
+    if (existingUser) {
+      return res.status(409).json({ message: 'Username already exists.' });
+    }
+    const newUser = new User({ username, password });
+    await newUser.save();
+    return res.status(201).json({ message: 'User registered successfully', user: newUser });
+  } catch (err) {
+    return res.status(500).json({ message: 'Error registering user', error: err });
+  }
+};
+
+export const loginUser = async (req: Request, res: Response) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ message: 'Username and password are required.' });
+  }
+  try {
+    const user = await User.findOne({ username, password });
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid credentials.' });
+    }
+    return res.status(200).json({ message: 'Login successful', user });
+  } catch (err) {
+    return res.status(500).json({ message: 'Error logging in', error: err });
   }
 };
 

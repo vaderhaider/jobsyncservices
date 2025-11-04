@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getData, postData, deleteJob, getCandidate, reachOut, deleteCandidate, getCallAnalysis, postCallAnalysis } from '../controllers/dataController';
+import { getData, postData, deleteJob, getCandidate, reachOut, deleteCandidate, getCallAnalysis, postCallAnalysis, registerUser, loginUser } from '../controllers/dataController';
 
 const router = Router();
 
@@ -13,5 +13,7 @@ router.post('/reachOut', reachOut);
 router.delete('/deleteCandidate', deleteCandidate);
 router.get('/getCallAnalysis', getCallAnalysis);
 router.post('/postCallAnalysis', postCallAnalysis);
+router.post('/register', registerUser);
+router.post('/login', loginUser);
 
 export default router;
