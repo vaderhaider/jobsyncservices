@@ -8,7 +8,8 @@ const candidateSchema = new mongoose.Schema({
   Concerns: { type: Array, required: true },
   Strengths: { type: Array, required: true },
   MandatoryRequirementsMet: { type: String, required: true },
-  ReachOut: { type: Boolean, default: false }
+  ReachOut: { type: Boolean, default: false },
+  jobID: { type: String, required: false }
 }, { timestamps: true });
 
 export const Candidate = mongoose.model('Candidate', candidateSchema);

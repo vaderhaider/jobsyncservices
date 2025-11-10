@@ -4,7 +4,44 @@ import { Candidate } from '../models/candidate';
 import { callAnalysis } from '../models/callAnalysis';
 import mongoose from 'mongoose';
 import { User } from '../models/user';
+import axios from 'axios';
 
+const MANATAL_API_URL = 'https://api.manatal.com/open/v3';
+const MANATAL_API_KEY = 'Token 1a617e053c1a4101a7b1e646caf226a025325930';
+
+
+export async function sendJobToManatal({ organizationName, title, description, location }: { organizationName: string, title: string, description: string, location: string }) {
+  try {
+    // 1. Check if organization exists
+    const orgRes = await axios.get(`${MANATAL_API_URL}/organizations/`, {
+      params: { name: organizationName },
+      headers: { Authorization: MANATAL_API_KEY }
+    });
+    let organizationID: string;
+    if (orgRes.data.count > 0) {
+      organizationID = orgRes.data.results[0].id;
+    } else {
+      // 2. Create organization
+      const createOrgRes = await axios.post(`${MANATAL_API_URL}/organizations/`, { name: organizationName }, {
+        headers: { Authorization: MANATAL_API_KEY }
+      });
+      organizationID = createOrgRes.data.id;
+    }
+    // 3. Create job
+    const jobRes = await axios.post(`${MANATAL_API_URL}/jobs/`, {
+      organization: organizationID,
+      position_name: title,
+      description,
+      address: location
+    }, {
+      headers: { Authorization: MANATAL_API_KEY }
+    });
+    return jobRes.data;
+  } catch (err) {
+    console.error('Error sending job to Manatal:', err);
+    throw err;
+  }
+}
 
 export const getData = async (req: Request, res: Response) => {
     const { userID } = req.query;
@@ -13,8 +50,6 @@ export const getData = async (req: Request, res: Response) => {
         jobs = await Job.find({ userID: new mongoose.Types.ObjectId(userID as string) });
     } else if (userID) {
         jobs = await Job.find({ userID: userID });
-    } else {
-        jobs = await Job.find();
     }
     res.json({ jobs });
 };
@@ -46,7 +81,29 @@ export const postData = async (req: Request, res: Response) => {
   const { title, description, requirements, organizationName, location, userID } = req.body;
   const newJob = new Job({ title, description, organizationName, location, requirements, userID });
   await newJob.save();
-  res.status(200).json({ message: 'Data received successfully' });
+
+  // Send job to Manatal
+  try {
+    const manatalResponse = await sendJobToManatal({ organizationName, title, description, location });
+    // If Manatal returned an id, persist it into the job document
+    if (manatalResponse && typeof manatalResponse.id !== 'undefined') {
+      const updatedJob = await Job.findByIdAndUpdate(
+        newJob._id,
+        { ManatalJobId: manatalResponse.id },
+        { new: true }
+      );
+      console.log('Saved ManatalJobId on Job:', manatalResponse.id);
+      return res.status(200).json({ message: 'Data received successfully', job: updatedJob });
+    } else {
+      // No id returned — still respond success for local save
+      console.warn('Manatal response did not include id:', manatalResponse);
+      return res.status(200).json({ message: 'Data received successfully', job: newJob });
+    }
+  } catch (err) {
+    console.error('Failed to send job to Manatal:', err);
+    // Return success for local save but include warning
+    return res.status(200).json({ message: 'Data received; failed to send to Manatal', job: newJob, error: err });
+  }
 };
 
 export const deleteJob = async (req: Request, res: Response) => {
@@ -72,8 +129,17 @@ export const deleteJob = async (req: Request, res: Response) => {
 };
 
 export const getCandidate = async (req: Request, res: Response) => {
-    const candidates = await Candidate.find();
-    res.json({candidates});
+  console.log('getCandidate route hit');
+  console.log(req.body);
+  const { jobIds } = req.body;
+  let candidates;
+  if (Array.isArray(jobIds) && jobIds.length > 0) {
+    candidates = await Candidate.find({ jobID: { $in: jobIds } });
+    console.log('Candidates found for jobIds:', jobIds, candidates);
+  } else {
+    console.log('No candidates found: invalid or empty jobIds');
+  }
+  res.json({ candidates });
 };
 
 export const reachOut = async (req: Request, res: Response) => {

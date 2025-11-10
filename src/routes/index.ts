@@ -8,7 +8,7 @@ router.post('/sendJobs', postData);
 router.put('/sendJobs', postData);
 router.delete('/deleteJob', deleteJob);
 
-router.get('/getCandidates', getCandidate);
+router.post('/getCandidates', getCandidate);
 router.post('/reachOut', reachOut);
 router.delete('/deleteCandidate', deleteCandidate);
 router.get('/getCallAnalysis', getCallAnalysis);

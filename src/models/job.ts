@@ -7,6 +7,7 @@ const jobSchema = new mongoose.Schema({
   location: { type: String, required: true },
   requirements: { type: Array, required: true },
   userID: { type: mongoose.Schema.Types.ObjectId, ref: 'users', required: true },
+  ManatalJobId: { type: Number, required: false }, 
 }, { timestamps: true });
 
 export const Job = mongoose.model('Job', jobSchema);
