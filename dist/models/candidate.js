@@ -13,6 +13,7 @@ const candidateSchema = new mongoose_1.default.Schema({
     Concerns: { type: Array, required: true },
     Strengths: { type: Array, required: true },
     MandatoryRequirementsMet: { type: String, required: true },
-    ReachOut: { type: Boolean, default: false }
+    ReachOut: { type: Boolean, default: false },
+    jobID: { type: String, required: false }
 }, { timestamps: true });
 exports.Candidate = mongoose_1.default.model('Candidate', candidateSchema);
