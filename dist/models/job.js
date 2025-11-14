@@ -11,6 +11,7 @@ const jobSchema = new mongoose_1.default.Schema({
     organizationName: { type: String, required: true },
     location: { type: String, required: true },
     requirements: { type: Array, required: true },
+    screeningQuestions: { type: [String], required: false },
     userID: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'users', required: true },
     ManatalJobId: { type: Number, required: false },
 }, { timestamps: true });

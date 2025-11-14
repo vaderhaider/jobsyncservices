@@ -62,12 +62,17 @@ exports.getData = getData;
 const postData = async (req, res) => {
     // If PUT, update existing job
     if (req.method === 'PUT') {
-        const { _id, title, description, requirements } = req.body;
+        console.log('putData route hit with body:', req.body);
+        const { _id, title, organizationName, description, requirements, screeningQuestions } = req.body;
         if (!_id) {
             return res.status(400).json({ message: 'Job _id is required for update.' });
         }
         try {
-            const updatedJob = await job_1.Job.findByIdAndUpdate(_id, { title, description, requirements }, { new: true });
+            const objectId = mongoose_1.default.Types.ObjectId.isValid(_id) ? new mongoose_1.default.Types.ObjectId(_id) : null;
+            if (!objectId) {
+                return res.status(400).json({ message: 'Invalid job _id.' });
+            }
+            const updatedJob = await job_1.Job.findOneAndUpdate({ _id: objectId }, { title, organizationName, description, requirements, screeningQuestions }, { new: true });
             if (!updatedJob) {
                 return res.status(404).json({ message: 'Job not found.' });
             }
@@ -79,8 +84,8 @@ const postData = async (req, res) => {
     }
     // Otherwise, create new job (POST)
     console.log('postData route hit with body:', req.body);
-    const { title, description, requirements, organizationName, location, userID } = req.body;
-    const newJob = new job_1.Job({ title, description, organizationName, location, requirements, userID });
+    const { title, description, requirements, organizationName, location, userID, screeningQuestions } = req.body;
+    const newJob = new job_1.Job({ title, description, organizationName, location, requirements, userID, screeningQuestions });
     await newJob.save();
     // Send job to Manatal
     try {
